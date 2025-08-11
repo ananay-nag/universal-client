@@ -1,0 +1,74 @@
+{
+  "name": "@ananay-nag/universal-client",
+  "version": "1.0.0",
+  "description": "Universal multi-server-type client for gRPC, HTTP(S), and Socket.IO services with security middleware support.",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "exports": {
+    "import": "./dist/index.mjs",
+    "require": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsup src/index.ts --dts --minify --format esm,cjs --out-dir dist",
+    "clean": "rm -rf dist",
+    "prepublishOnly": "npm run clean && npm run build"
+  },
+  "dependencies": {
+    "@grpc/grpc-js": "^1.8.0",
+    "@grpc/proto-loader": "^0.7.5",
+    "axios": "^1.4.0",
+    "socket.io-client": "^4.7.1"
+  },
+  "devDependencies": {
+    "tsup": "^8.5.0",
+    "typescript": "^5.8.3"
+  },
+  "keywords": [
+    "grpc",
+    "socket.io",
+    "http",
+    "typescript",
+    "api",
+    "client",
+    "universal",
+    "microservices",
+    "grpc-js",
+    "grpc-client",
+    "socket-client",
+    "http-client",
+    "universal-client",
+    "multi-protocol",
+    "multi-server",
+    "cross-protocol",
+    "cross-server",
+    "cross-platform",
+    "cross-service",
+    "cross-communication",
+    "cross-service-communication",
+    "middleware",
+    "security"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ananay-nag/universal-call.git"
+  },
+  "author": "Ananay Nag",
+  "contributors": [
+    {
+      "name": "Ananay Nag",
+      "email": "ananaynag1994s@gmail.com",
+      "url": "https://avatars.githubusercontent.com/u/36204888?s=48&v=4"
+    }
+  ],
+  "license": "MIT",
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
