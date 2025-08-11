@@ -1,6 +1,6 @@
 {
   "name": "@ananay-nag/universal-client",
-  "version": "1.0.0",
+  "version": "2.0.1",
   "description": "Universal multi-server-type client for gRPC, HTTP(S), and Socket.IO services with security middleware support.",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
@@ -9,18 +9,32 @@
     "import": "./dist/index.mjs",
     "require": "./dist/index.js"
   },
+  "bin": {
+    "uniclient": "dist/cli/main.js"
+  },
   "scripts": {
-    "build": "tsup src/index.ts --dts --minify --format esm,cjs --out-dir dist",
+    "build:lib": "tsup src/index.ts --dts --minify --format esm,cjs --out-dir dist --tsconfig tsconfig.lib.json",
+    "build:cli": "tsc -p tsconfig.cli.json",
     "clean": "rm -rf dist",
+    "build": "npm run build:lib && npm run build:cli",
     "prepublishOnly": "npm run clean && npm run build"
   },
   "dependencies": {
     "@grpc/grpc-js": "^1.8.0",
     "@grpc/proto-loader": "^0.7.5",
+    "amqplib": "^0.10.8",
     "axios": "^1.4.0",
-    "socket.io-client": "^4.7.1"
+    "grpc-web": "^1.5.0",
+    "kafkajs": "^2.2.4",
+    "mqtt": "^5.14.0",
+    "nats": "^2.29.3",
+    "socket.io-client": "^4.7.1",
+    "ws": "^8.18.3"
   },
   "devDependencies": {
+    "@types/amqplib": "^0.10.7",
+    "@types/estree": "^1.0.8",
+    "@types/node": "^24.2.0",
     "tsup": "^8.5.0",
     "typescript": "^5.8.3"
   },
@@ -31,6 +45,17 @@
     "typescript",
     "api",
     "client",
+    "grpc-client",
+    "socket-client",
+    "http-client",
+    "universal-client",
+    "multi-client",
+    "kafkajs-client",
+    "nats-client",
+    "amqp-client",
+    "mqtt-client",
+    "websocket",
+    "websocket-client",
     "universal",
     "microservices",
     "grpc-js",

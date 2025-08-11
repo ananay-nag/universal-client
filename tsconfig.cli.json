@@ -1,0 +1,9 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "declaration": false,
+    "outDir": "./dist/cli"
+  },
+  "include": ["src/cli/main.ts"], // or ["cli/main.ts"] if nested
+  "exclude": ["node_modules", "dist"]
+}

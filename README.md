@@ -1,15 +1,15 @@
 # <img src="./universal-client-logo.png" alt="universal-client-logo" style="width:50px;margin-bottom:-15px;"/> Universal-Client
 
-**A TypeScript-first library for seamless, configuration-driven communication with gRPC, HTTP(S), and Socket.IO services—optimized for modern service architectures and high-performance apps.**
+**A TypeScript‑first, plugin‑driven library for seamless, configuration‑driven communication with multi-protocol services — optimized for modern service architectures and high‑performance apps.**
 
 <img src="./universal-client.png" alt="universal-client" style="width:60%;min-width:400px; margin-left: 20%"/>
 
 ---
 
-## 🚀 Why universal-client?
+## 🚀 Why universal-client? 
 
-Tired of writing separate glue code for HTTP, gRPC, and WebSocket/Socket.IO? Want a **single, typed, persistent, and zero-boilerplate way** to invoke any service from any node in your network (client, server, microservice, event handler, etc.)?  
-**universal-client** gives you all that—and more!
+Tired of writing separate glue code for HTTP, gRPC, Kafka, and Socket.IO? Want a **single, typed, persistent, and zero‑boilerplate way** to invoke **any service** from **any node** in your network (client, server, microservice, event handler, etc.)?  
+**universal-client** delivers exactly that.
 
 - **Direct and unified API:** No need to spin up a separate proxy, API gateway, or BFF.
 - **Low latency:** Uses pooled, persistent gRPC and Socket.IO connections.
@@ -31,6 +31,21 @@ Tired of writing separate glue code for HTTP, gRPC, and WebSocket/Socket.IO? Wan
 - ◀️ **Bi-directional:** Every server can also be a client—microservices nirvana.
 - 🚦 **Error Handling:** Standardized, evented, and debuggable.
 - 📚 **Easy Extendability:** Add more protocols or custom transports as needed.
+- 🚀 **Unified API** for multiple protocols — one `.call()` for all.
+-    **Production ready** — in microservices, APIs, frontends, or edge runtimes.
+- ⏱  **Timeout control** per call or globally
+- 📦 **Streaming** support (gRPC streaming, Kafka consumers, Socket.IO event streams)
+
+## ✨ Supported Protocols
+
+✅ HTTP / HTTPS  
+✅ gRPC (`@grpc/grpc-js`) native  
+✅ **gRPC-Web** (`grpc-web` for browser/client-side use)  
+✅ Socket.IO (with connection wait + event handlers)  
+✅ Plain WebSocket  
+✅ Kafka (Producer & Consumer with pause/resume)  
+✅ NATS, AMQP, MQTT (community plugins)  
+✅ Easily extensible via `ServerTypeClient` interface
 
 ---
 
@@ -58,9 +73,9 @@ Tired of writing separate glue code for HTTP, gRPC, and WebSocket/Socket.IO? Wan
 ## 📦 Installation
 
 ```bash
-    npm install universal-client
+    npm install @ananay-nag/universal-client
     or
-    yarn add universal-client
+    yarn add @ananay-nag/universal-client
 ```
 
 ---
@@ -70,54 +85,117 @@ Tired of writing separate glue code for HTTP, gRPC, and WebSocket/Socket.IO? Wan
 ### 1. Define your endpoints and protocols
 
 ```typescript
-import { UniversalClient } from "universal-client";
-import { UniversalClientConfig } from "universal-client/dist/types";
+import { UniversalClient, UniversalClientConfig } from "@ananay-nag/universal-client";
+
 
 const config: UniversalClientConfig = {
   endpoints: {
+    // gRPC native
     createUser: {
-      protocol: "grpc",
+      serverType: SupportedServerTypes.GRPC,
       host: "localhost",
       port: 50051,
-      serviceName: "user.UserService",
-      methodName: "CreateUser",
       protoFile: "./protos/user.proto",
+      packageName: "user",
+      serviceName: "UserService",
+      methodName: "CreateUser",
     },
-    sendChat: {
-      protocol: "socket",
-      host: "http://localhost",
-      port: 3001,
-      event: "sendMessage",
+    // gRPC-Web (browser friendly)
+    sayHelloWeb: {
+      serverType: SupportedServerTypes.GRPCWEB,
+      host: "http://localhost:8080",
+      serviceName: "GreeterService",
+      methodName: "sayHello",
+      createClient: (address: string) => new GreeterServiceClient(address),
+      options: {  
+        timeoutMs: 10000
+      },
     },
+    // HTTP
     signup: {
-      protocol: "http",
+      serverType: SupportedServerTypes.HTTP,
       host: "http://localhost:4000",
       path: "/api/signup",
       methodName: "POST",
     },
+    // Socket.IO with event handler for server pushes
+    receiveEmits: {
+      serverType: SupportedServerTypes.SOCKETIO,
+      host: "http://localhost:3002",
+      port: 3002,
+      eventHandler: (socket: Socket) => {
+        socket.on("serverEvent", console.log);
+      },
+    },
+    sendChat: {
+      protocol: SupportedServerTypes.SOCKETIO,
+      host: "http://localhost",
+      port: 3001,
+      event: "sendChat",
+    },
+    // Kafka Producer
+    kafkaProducer: {
+      serverType: SupportedServerTypes.KAFKA,
+      host: "localhost:9092",
+      topic: "chat",
+      mode: "producer"
+      options: {},
+    },
+    // Kafka Consumer
+    kafkaConsumer: {
+      serverType: SupportedServerTypes.KAFKA,
+      host: "localhost:9092",
+      groupId: "chat-group",
+      topic: "chat",
+      mode: "consumer",
+      options: {
+        fromBeginning: true,
+      },
+      messageHandler: async ({ topic, partition, message }: any) => {
+        console.log(`${topic} [${partition}]: ${message.value.toString()}`);
+      },
+    },
   },
 };
+
+const client = new UniversalClient(config);
 ```
 
 ### 2. Create and use your client anywhere
 
 ```typescript
-const client = new UniversalClient(config);
+// gRPC native call
+await client.call("createUser", { username: "alice", email: "test@example.com" });
 
-// gRPC call
-const user = await client.call("createUser", {
-  username: "alice",
-  email: "alice@example.com",
-});
+// gRPC-Web call
+await client.call("sayHelloWeb", new HelloRequest().setName("World"));
 
-// Socket.io call
-const chatResp = await client.call("sendChat", { message: "hello world" });
+// HTTP POST
+await client.call("signup", { username: "bob", password: "secure" });
 
-// HTTP call
-const signupResp = await client.call("signup", {
-  username: "bob",
-  password: "supersecure",
-});
+// Socket.IO emit
+await client.call("sendChat", { message: "Hello real-time!" });
+
+// Kafka produce
+await client.call("kafkaProducer", { userId: 1, message: "Hi Kafka" });
+
+// Kafka control (pause consumer)
+await client.call("kafkaConsumer", null, { methodName: "pause" });
+
+```
+
+---
+
+## ⚙️ Middleware (Auth Example)
+
+```typescript
+import { AuthJwtPlugin } from "@ananay-nag/universal-client";
+
+function getToken() {
+  return localStorage.getItem("jwtToken") || "";
+}
+
+client.useMiddleware(AuthJwtPlugin(getToken));
 ```
 
 ---
@@ -152,9 +230,9 @@ io.on("connection", (socket) => {
 
 ```typescript
 app.post('/user', async (req, res) => {
-const user = await universalClient.call('createUser', req.body); // gRPC
-await universalClient.call('sendChat', { message: New user: ${user.username} }); // Socket
-res.json(user);
+  const user = await universalClient.call('createUser', req.body); // gRPC
+  await universalClient.call('sendChat', { message: New user: ${user.username} }); // Socket
+  res.json(user);
 });
 ```
 
@@ -162,7 +240,7 @@ res.json(user);
 
 ## 🤖 TypeScript Typings
 
-You can define your own interfaces for request/response types—and use codegen from `.proto` files for *full type safety*.
+You can define your own interfaces for request/response types—and use codegen from `.proto` files for _full type safety_.
 
 ---
 
@@ -176,11 +254,46 @@ You can define your own interfaces for request/response types—and use codegen 
 
 ---
 
+## Works with HTTP headers, gRPC metadata, Socket.IO auth handshake.
+
+---
+
+## ⚡ Socket.IO Updates
+
+- **`createClient` now waits** for connection before returning, avoiding "not connected" errors.
+- **`eventHandler` in config** lets you subscribe to server-emitted events once on connect.
+
+---
+
+## 📌 gRPC-Web Notes
+
+- For browsers/environments without raw gRPC, provide `createClient` in config that returns your generated grpc-web client.
+- Official `grpc-web` npm package supported.
+
+---
+
+## 🎯 Kafka Updates
+
+- Unified `kafkaPlugin` supports producer/consumer via `options.mode`.
+- Delegates send/control logic to `kafkaProducerPlugin` / `kafkaConsumerPlugin`.
+- Consumers can auto-run `messageHandler` for incoming messages.
+
+---
+
+## 🤖 TypeScript
+
+Types are exported for:
+- `UniversalClientConfig`
+- `EndpointConfig`
+- `SupportedServerTypes`
+- `CallContext`
+- `MiddlewarePlugin` 
+
 ## 💡 Tips & Best Practices
 
 - Share domain model types with backends (using a `@yourorg/protos` npm package).
 - Use a config per environment (dev, staging, prod).
-- For browser-based gRPC, use `grpc-web`*; for Node, `@grpc/grpc-js` is native.
+- For browser-based gRPC, use `grpc-web`\*; for Node, `@grpc/grpc-js` is native.
 - Works in Monorepo or Polyrepo architectures.
 
 ---
@@ -209,4 +322,3 @@ MIT
 ## 🌟 Contributing/Feedback
 
 We welcome PRs and issues! If there's a protocol or feature you'd like, open a discussion on GitHub.
-
